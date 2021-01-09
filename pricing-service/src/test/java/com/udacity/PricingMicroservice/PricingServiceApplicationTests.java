@@ -9,5 +9,4 @@ class PricingServiceApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }
