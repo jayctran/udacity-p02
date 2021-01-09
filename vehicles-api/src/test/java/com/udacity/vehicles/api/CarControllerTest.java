@@ -2,9 +2,8 @@ package com.udacity.vehicles.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.udacity.vehicles.client.maps.MapsClient;
@@ -54,12 +53,14 @@ public class CarControllerTest {
     @MockBean
     private MapsClient mapsClient;
 
+    private Car car;
+
     /**
      * Creates pre-requisites for testing, such as an example car.
      */
     @Before
     public void setup() {
-        Car car = getCar();
+        car = getCar();
         car.setId(1L);
         given(carService.save(any())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
@@ -72,7 +73,6 @@ public class CarControllerTest {
      */
     @Test
     public void createCar() throws Exception {
-        Car car = getCar();
         mvc.perform(
                 post(new URI("/cars"))
                         .content(json.write(car).getJson())
@@ -91,6 +91,8 @@ public class CarControllerTest {
                 .accept(MediaType.APPLICATION_JSON_UTF8)
                 .contentType(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isOk());
+
+        System.out.println(mvc.perform(get("/cars")).andReturn());
     }
 
     /**
@@ -99,10 +101,12 @@ public class CarControllerTest {
      */
     @Test
     public void findCar() throws Exception {
-        mvc.perform(get("/cars/2")
+        mvc.perform(get("/cars/1")
                 .accept(MediaType.APPLICATION_JSON_UTF8)
                 .contentType(MediaType.APPLICATION_JSON_UTF8))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.condition").value("USED"))
+                .andExpect(jsonPath("$.details.model").value("Impala"));
     }
 
     /**
@@ -111,15 +115,25 @@ public class CarControllerTest {
      */
     @Test
     public void deleteCar() throws Exception {
-        /**
-         * TODO: Add a test to check whether a vehicle is appropriately deleted
-         *   when the `delete` method is called from the Car Controller. This
-         *   should utilize the car from `getCar()` below.
-         */
-        mvc.perform(delete("/cars/2")
+        mvc.perform(delete("/cars/1")
                 .accept(MediaType.APPLICATION_JSON_UTF8)
                 .contentType(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isNoContent());
+    }
+
+    /**
+     * Tests the update of a single car by ID.
+     * @throws Exception if the update operation of a vehicle fails
+     */
+    @Test
+    public void updateCar() throws Exception {
+        car.setPrice("1002.01");
+        mvc.perform(put("/cars/1")
+                .content(json.write(car).getJson())
+                .accept(MediaType.APPLICATION_JSON_UTF8)
+                .contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price").value("1002.01"));
     }
 
     /**
